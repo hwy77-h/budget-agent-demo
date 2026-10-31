@@ -6,14 +6,15 @@ import os
 from pathlib import Path
 
 import streamlit as st
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 from agent import AgentError, DEMO_TODAY, answer
 from ledger import Ledger
 
 ROOT = Path(__file__).resolve().parent
-load_dotenv(ROOT / ".env")
-api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+file_key = str(dotenv_values(ROOT / ".env").get("DEEPSEEK_API_KEY") or "").strip()
+environment_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+api_key = file_key if file_key and file_key != "在这里填入你自己的密钥" else environment_key
 if api_key == "在这里填入你自己的密钥":
     api_key = ""
 
