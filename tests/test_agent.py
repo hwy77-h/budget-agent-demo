@@ -49,8 +49,11 @@ class AgentTests(unittest.TestCase):
             response(tool_calls=[tool_call("get_budget_status", {"month": "2026-10", "category": "餐饮"})]),
             response(content="模拟账本中，10 月餐饮超支 30.00 元。"),
         ])
-        result = answer("10 月餐饮超支了吗？", [], self.ledger, client=client)
+        trace = []
+        result = answer("10 月餐饮超支了吗？", [], self.ledger, client=client, trace=trace)
         self.assertIn("30.00", result)
+        self.assertEqual(trace[0]["tool"], "get_budget_status")
+        self.assertEqual(trace[0]["result"]["total_remaining"], "-30.00")
         sent = client.calls[1]["messages"]
         payload = json.loads(sent[-1]["content"])
         self.assertEqual(payload["total_remaining"], "-30.00")

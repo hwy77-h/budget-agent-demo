@@ -91,6 +91,7 @@ def answer(
     ledger: Ledger,
     api_key: str | None = None,
     client: Any | None = None,
+    trace: list[dict[str, Any]] | None = None,
 ) -> str:
     """Return one answer. Client injection enables protocol tests without spending API credits."""
     if not user_text.strip():
@@ -131,6 +132,12 @@ def answer(
             messages.append(message)
             for call in tool_calls:
                 result = _call_tool(ledger, call.function.name, call.function.arguments)
+                if trace is not None:
+                    trace.append({
+                        "tool": call.function.name,
+                        "arguments": call.function.arguments,
+                        "result": result,
+                    })
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call.id,

@@ -52,6 +52,11 @@ if "messages" not in st.session_state:
 for item in st.session_state.messages:
     with st.chat_message(item["role"]):
         st.markdown(item["content"])
+        if item["role"] == "assistant" and item.get("trace"):
+            with st.expander("查看计算依据"):
+                for step in item["trace"]:
+                    st.write(step["tool"])
+                    st.json(step["result"], expanded=False)
 
 typed = st.chat_input("例如：10 月娱乐支出是否超出预算？")
 prompt = st.session_state.pop("pending_prompt", None) or typed
@@ -62,12 +67,18 @@ if prompt:
         st.markdown(prompt)
     with st.chat_message("assistant"):
         with st.spinner("正在查询模拟账本…"):
+            trace = []
             try:
-                reply = answer(prompt, previous, ledger, api_key=os.getenv("DEEPSEEK_API_KEY"))
+                reply = answer(prompt, previous, ledger, api_key=os.getenv("DEEPSEEK_API_KEY"), trace=trace)
             except AgentError as exc:
                 reply = str(exc)
         st.markdown(reply)
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+        if trace:
+            with st.expander("查看计算依据"):
+                for step in trace:
+                    st.write(step["tool"])
+                    st.json(step["result"], expanded=False)
+    st.session_state.messages.append({"role": "assistant", "content": reply, "trace": trace})
 
 st.divider()
 st.caption(
