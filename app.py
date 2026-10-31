@@ -13,6 +13,9 @@ from ledger import Ledger
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
+api_key = os.getenv("DEEPSEEK_API_KEY", "").strip()
+if api_key == "在这里填入你自己的密钥":
+    api_key = ""
 
 st.set_page_config(page_title="收支管理 Agent｜模拟作品", page_icon="💬", layout="centered")
 st.title("个人收支管理 Agent")
@@ -29,7 +32,7 @@ with st.sidebar:
     st.write("可查询月份：" + "、".join(ledger.available_months))
     st.write("类别：餐饮、交通、购物、学习、娱乐、礼物")
     st.info("金额由本地 Python 工具计算；DeepSeek 负责理解问题、调用工具和组织回答。")
-    if not os.getenv("DEEPSEEK_API_KEY"):
+    if not api_key:
         st.warning("尚未配置 DEEPSEEK_API_KEY。请参考 README 在本机创建 .env 文件。")
     if st.button("清空对话"):
         st.session_state.messages = []
@@ -69,7 +72,7 @@ if prompt:
         with st.spinner("正在查询模拟账本…"):
             trace = []
             try:
-                reply = answer(prompt, previous, ledger, api_key=os.getenv("DEEPSEEK_API_KEY"), trace=trace)
+                reply = answer(prompt, previous, ledger, api_key=api_key, trace=trace)
             except AgentError as exc:
                 reply = str(exc)
         st.markdown(reply)
