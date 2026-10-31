@@ -4,7 +4,7 @@
 
 ![本机真实 DeepSeek 查询与计算依据截图](assets/demo-query.png)
 
-[观看约两分钟的静音字幕演示](assets/demo-video.mp4)。视频由本机真实在线交互的截图制作，展示成功查询、预算超支以及缺少月份后的追问与继续对话。
+[下载或观看约两分钟的静音字幕演示 MP4](https://github.com/hwy77-h/budget-agent-demo/raw/refs/heads/main/assets/demo-video.mp4)。视频由本机真实在线交互的截图制作，展示成功查询、预算超支以及缺少月份后的追问与继续对话。
 
 > 所有消费记录和商家均为虚构示例，不连接银行卡、不读取个人账单，不提供投资建议。
 
