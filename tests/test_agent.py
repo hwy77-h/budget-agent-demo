@@ -69,6 +69,14 @@ class AgentTests(unittest.TestCase):
         with self.assertRaisesRegex(AgentError, "未查询账本"):
             answer("10 月花了多少？", [], self.ledger, client=client)
 
+    def test_amount_not_in_tool_result_is_blocked(self):
+        client = FakeClient([
+            response(tool_calls=[tool_call("get_spending_summary", {"month": "2026-10"})]),
+            response(content="10 月支出 999 元。"),
+        ])
+        with self.assertRaisesRegex(AgentError, "工具未计算"):
+            answer("10 月花了多少？", [], self.ledger, client=client)
+
     def test_clarifying_question_needs_no_tool(self):
         client = FakeClient([response(content="你想查哪个月份？")])
         self.assertEqual(answer("餐饮花了多少？", [], self.ledger, client=client), "你想查哪个月份？")

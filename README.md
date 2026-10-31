@@ -2,6 +2,10 @@
 
 一个供 AI 产品实习申请展示的本地 Demo。用户用中文查询虚构账本中的支出和预算；DeepSeek 选择工具，Python 负责计算，聊天页面由 Streamlit 提供。
 
+![本机真实 DeepSeek 查询与计算依据截图](assets/demo-query.png)
+
+[观看约两分钟的静音字幕演示](assets/demo-video.mp4)。视频由本机真实在线交互的截图制作，展示成功查询、预算超支以及缺少月份后的追问与继续对话。
+
 > 所有消费记录和商家均为虚构示例，不连接银行卡、不读取个人账单，不提供投资建议。
 
 ## 能做什么
@@ -50,11 +54,11 @@
 | 组件 | 责任 |
 | --- | --- |
 | `data/sample_transactions.csv`、`data/sample_budgets.csv` | 可公开、可复现的虚构数据 |
-| `ledger.py` | 校验数据与工具参数，用 `Decimal` 准确计算人民币金额 |
+| `ledger.py` | 校验数据与工具参数，用 `Decimal` 准确计算人民币金额及跨月差额 |
 | `agent.py` | 把用户问题发给 DeepSeek，执行被选中的工具，再把结果交回模型 |
 | `app.py` | 聊天界面、示例问题和错误提示 |
 
-模型只能选择已定义的查询工具，不能执行任意 SQL 或修改账本。若模型没有查询账本却直接报出金额，程序会阻止该回答。每次最多进行五轮模型调用，以免错误循环持续消耗额度。第一版不做自动消费分类、真实账单导入、账户登录或在线部署。
+模型只能选择已定义的三项查询工具，不能执行任意 SQL 或修改账本。若模型没有查询账本却直接报出金额，或报出工具结果中没有的金额，程序会阻止该回答。每次最多进行五轮模型调用，以免错误循环持续消耗额度。第一版不做自动消费分类、真实账单导入、账户登录或在线部署。
 
 每条成功查询可展开“查看计算依据”，检查实际调用的工具和 Python 返回的数据。需求、验收标准与范围见 [PROJECT_BRIEF.md](PROJECT_BRIEF.md)。
 
@@ -65,4 +69,4 @@
 3. **验证：**先用固定数据核对金额，再用 [10 条对话测试](EVALUATION.md)检查追问、无数据和错误场景。
 4. **改进：**把实测失败案例、原因和修复记录到 `EVALUATION.md`，不要把尚未实测的项目写成已通过。
 
-录屏提纲见 [DEMO_SCRIPT.md](DEMO_SCRIPT.md)，同学试用记录模板见 [FEEDBACK_TEMPLATE.md](FEEDBACK_TEMPLATE.md)。现阶段代码已完成本地计算与模拟模型协议测试；真正的 DeepSeek 对话测试和演示视频需在本机配置密钥后进行。
+录屏提纲见 [DEMO_SCRIPT.md](DEMO_SCRIPT.md)，同学试用记录模板见 [FEEDBACK_TEMPLATE.md](FEEDBACK_TEMPLATE.md)。截至 2026-11-01，九条真实 DeepSeek 问答已通过，模拟 API 故障的本地测试也通过；具体记录见 [EVALUATION.md](EVALUATION.md)。两位同学的试用反馈仍待完成。若要重新制作静音视频，可先安装 `video-requirements.txt`，再运行 `scripts/build_demo_video.py`。

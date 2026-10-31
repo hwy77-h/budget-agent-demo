@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from ledger import Ledger
@@ -12,16 +13,41 @@ MODEL = "deepseek-flash"
 BASE_URL = "https://api.deepseek.com"
 DEMO_TODAY = "2026-10-31"
 AMOUNT_PATTERN = re.compile(r"(?:¥|￥|\d+(?:\.\d+)?\s*元)")
+MONEY_IN_ANSWER = re.compile(r"(?:[¥￥]\s*([+-]?[\d,]+(?:\.\d{1,2})?)|([+-]?[\d,]+(?:\.\d{1,2})?)\s*元)")
+MONEY_FIELDS = {
+    "total", "limit", "spent", "remaining", "total_limit", "total_spent",
+    "total_remaining", "total_a", "total_b", "difference_b_minus_a",
+}
 
 SYSTEM_PROMPT = """你是个人收支管理 Agent，操作的是完全虚构的人民币账本。
 模拟当前日期是 2026-10-31；“本月”指 2026-10。“上月”指 2026-09。
 只回答账本支出与预算问题。任何具体支出、预算、余额或类别排名都必须先调用工具。
-金额只能来自工具结果，不能自己猜、补全或计算百分比。跨月比较可分别查询两个月。
+金额只能来自工具结果，不能自己猜、补全、相减或计算百分比。跨月问题优先调用 get_spending_comparison。
 用户没有给出月份且上下文无法确定时，先简短追问月份。没有记录或预算时明确说没有。
 不要把模拟数据说成真实个人账单。不要提供投资建议或自动分类。
 回答使用简洁中文，金额标注人民币。"""
 
 TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_spending_comparison",
+            "description": "比较两个指定月份的模拟支出，返回各月金额、笔数及由 Python 算出的差额。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "month_a": {"type": "string", "description": "较早月份 YYYY-MM"},
+                    "month_b": {"type": "string", "description": "较晚月份 YYYY-MM"},
+                    "category": {
+                        "type": "string",
+                        "enum": ["餐饮", "交通", "购物", "学习", "娱乐", "礼物"],
+                        "description": "可选；不填则比较总支出",
+                    },
+                },
+                "required": ["month_a", "month_b"],
+            },
+        },
+    },
     {
         "type": "function",
         "function": {
@@ -72,6 +98,12 @@ def _call_tool(ledger: Ledger, name: str, raw_arguments: str) -> dict[str, Any]:
         arguments = json.loads(raw_arguments)
         if not isinstance(arguments, dict):
             raise ValueError("参数必须是对象。")
+        if name == "get_spending_comparison":
+            if set(arguments) - {"month_a", "month_b", "category"} or not {"month_a", "month_b"} <= set(arguments):
+                raise ValueError("跨月参数包含未知字段或缺少月份。")
+            return ledger.get_spending_comparison(
+                arguments["month_a"], arguments["month_b"], arguments.get("category")
+            )
         if set(arguments) - {"month", "category"} or "month" not in arguments:
             raise ValueError("参数包含未知字段或缺少月份。")
         month = arguments["month"]
@@ -83,6 +115,29 @@ def _call_tool(ledger: Ledger, name: str, raw_arguments: str) -> dict[str, Any]:
         raise ValueError("未知工具。")
     except (ValueError, TypeError, json.JSONDecodeError) as exc:
         return {"status": "invalid_arguments", "message": str(exc)}
+
+
+def _money_from_tool_result(value: Any) -> set[Decimal]:
+    found: set[Decimal] = set()
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in MONEY_FIELDS and isinstance(item, str):
+                try:
+                    found.add(abs(Decimal(item)))
+                except InvalidOperation:
+                    pass
+            elif key == "by_category" and isinstance(item, dict):
+                for amount in item.values():
+                    try:
+                        found.add(abs(Decimal(amount)))
+                    except (InvalidOperation, TypeError):
+                        pass
+            elif isinstance(item, (dict, list)):
+                found.update(_money_from_tool_result(item))
+    elif isinstance(value, list):
+        for item in value:
+            found.update(_money_from_tool_result(item))
+    return found
 
 
 def answer(
@@ -111,6 +166,7 @@ def answer(
     )
     messages.append({"role": "user", "content": user_text.strip()})
     used_tool = False
+    tool_results: list[dict[str, Any]] = []
 
     for _ in range(5):
         try:
@@ -132,6 +188,7 @@ def answer(
             messages.append(message)
             for call in tool_calls:
                 result = _call_tool(ledger, call.function.name, call.function.arguments)
+                tool_results.append(result)
                 if trace is not None:
                     trace.append({
                         "tool": call.function.name,
@@ -149,5 +206,10 @@ def answer(
             raise AgentError("模型返回了空回答，请重试。")
         if not used_tool and AMOUNT_PATTERN.search(content):
             raise AgentError("模型未查询账本就给出了金额；已阻止这条回答，请换个问法重试。")
+        allowed_amounts = _money_from_tool_result(tool_results)
+        for match in MONEY_IN_ANSWER.finditer(content):
+            amount = Decimal((match.group(1) or match.group(2)).replace(",", ""))
+            if abs(amount) not in allowed_amounts:
+                raise AgentError("模型给出了工具未计算的金额；已阻止这条回答，请换个问法重试。")
         return content
     raise AgentError("模型连续调用工具过多，已停止本轮查询。")

@@ -7,3 +7,4 @@ __pycache__/
 *.db
 *.log
 .eval_live.json
+assets/video_frames/

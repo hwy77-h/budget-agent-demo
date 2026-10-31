@@ -25,6 +25,10 @@ class LedgerTests(unittest.TestCase):
 
     def test_september_comparison_value(self):
         self.assertEqual(self.ledger.get_spending_summary("2026-09")["total"], "1838.00")
+        comparison = self.ledger.get_spending_comparison("2026-09", "2026-10")
+        self.assertEqual(comparison["difference_b_minus_a"], "214.00")
+        self.assertEqual(comparison["total_a"], "1838.00")
+        self.assertEqual(comparison["total_b"], "2052.00")
 
     def test_budget_overrun_and_remaining(self):
         result = self.ledger.get_budget_status("2026-10", "餐饮")

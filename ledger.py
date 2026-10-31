@@ -150,3 +150,28 @@ class Ledger:
             "total_spent": money(sum((Decimal(item["spent"]) for item in items), Decimal("0"))),
             "total_remaining": money(sum((Decimal(item["remaining"]) for item in items), Decimal("0"))),
         }
+
+    def get_spending_comparison(self, month_a: str, month_b: str, category: str | None = None) -> dict:
+        """Compare two months; all arithmetic stays in Python."""
+        first = self.get_spending_summary(month_a, category)
+        second = self.get_spending_summary(month_b, category)
+        if first["status"] != "ok" or second["status"] != "ok":
+            return {
+                "status": "no_data",
+                "months_without_records": [
+                    item["month"] for item in (first, second) if item["status"] != "ok"
+                ],
+                "message": "至少一个月份没有模拟消费记录，不能计算差额。",
+            }
+        return {
+            "status": "ok",
+            "currency": "CNY",
+            "category": category,
+            "month_a": month_a,
+            "total_a": first["total"],
+            "count_a": first["count"],
+            "month_b": month_b,
+            "total_b": second["total"],
+            "count_b": second["count"],
+            "difference_b_minus_a": money(Decimal(second["total"]) - Decimal(first["total"])),
+        }
