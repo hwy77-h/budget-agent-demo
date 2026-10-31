@@ -41,6 +41,8 @@
    .\.venv\Scripts\python.exe -m unittest discover -s tests -v
    ```
 
+配置密钥后，可运行 `.\.venv\Scripts\python.exe scripts/evaluate_live.py` 进行九条真实对话测试。原始结果只写入本机的 `.eval_live.json`，已被 Git 忽略；检查后把非敏感的结论填入 `EVALUATION.md`。
+
 项目使用 DeepSeek 官方支持的 OpenAI 兼容接口与工具调用：[首次调用](https://api-docs.deepseek.com/en/) · [工具调用说明](https://api-docs.deepseek.com/guides/tool_calls/)。API 请求会消耗对应账号的额度。建议在 DeepSeek 控制台查看使用量。
 
 ## 设计取舍
