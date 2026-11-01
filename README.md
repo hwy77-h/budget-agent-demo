@@ -19,15 +19,15 @@
 
 ## 在 Windows 上运行
 
-1. 从 [Python 官网](https://www.python.org/downloads/windows/)安装 Python 3.13（64 位）。本机 VS Code 和 Git 已有，但此前 `py` 启动器未找到可用的 Python。
-2. 在 PowerShell 进入本项目目录，创建隔离环境并安装依赖：
+1. 首次在新电脑运行时，从 [Python 官网](https://www.python.org/downloads/windows/)安装 Python 3.13（64 位）。本项目所在电脑已在项目目录内准备好 Python 3.13.18 和 `.venv`；直接运行第 4 步即可，无需重复安装。
+2. 如果是新克隆的项目，在 PowerShell 进入项目目录，创建隔离环境并安装依赖：
 
    ```powershell
    py -3.13 -m venv .venv
    .\.venv\Scripts\python.exe -m pip install -r requirements.txt
    ```
 
-3. 复制 `.env.example` 为 `.env`，只在**本机**把占位内容换成自己的 DeepSeek API 密钥。不要把密钥发给他人，也不要上传 `.env`：
+3. 首次配置时复制 `.env.example` 为 `.env`，只在**本机**把占位内容换成自己的 DeepSeek API 密钥。如果 `.env` 已配置，请跳过复制命令，以免覆盖密钥。不要把密钥发给他人，也不要上传 `.env`：
 
    ```powershell
    Copy-Item .env.example .env
